@@ -29,7 +29,7 @@ Since Ubuntu allows kickstart it can be made to work as the source distro, but t
 **Some ideas**<br/>
 Some of the following ideas I'll try to deploy them as "templates" in the future.<br/>
 <br/>
-&nbsp;&nbsp;- Syslog collector to forward events to a central log system.<br/>
+&nbsp;&nbsp;- Generic syslog collector to forward events to a central log system.<br/>
 &nbsp;&nbsp;- Docker node and manage it remotely with swarm.<br/>
 &nbsp;&nbsp;- Add openvpn or any vpn software with certificate auth to talk back securely to your network.<br/>
 &nbsp;&nbsp;- Network scanner with nmap or any other scanning library.<br/>
