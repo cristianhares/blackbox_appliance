@@ -63,18 +63,18 @@ the main script will attempt to install and download them in your distro if avai
 although i know in newer ubuntu's some are not present, and I haven't tested it yet in Suse-based ones.<br/>
 <br/>
 Main Script (it will try to download them):<br/>
-&nbsp;&nbsp;genisoimage<br/>
-&nbsp;&nbsp;python3<br/>
-&nbsp;&nbsp;pykickstart<br/>
-&nbsp;&nbsp;createrepo<br/>
+&nbsp;&nbsp;- genisoimage<br/>
+&nbsp;&nbsp;- python3<br/>
+&nbsp;&nbsp;- pykickstart<br/>
+&nbsp;&nbsp;- createrepo<br/>
 <br/>
 Generated ISO (it will try to download them for Centos 7):<br/>
-&nbsp;&nbsp;open-vm-tools (and dependencies)<br/>
-&nbsp;&nbsp;hyperv-daemons (and dependencies)<br/>
-&nbsp;&nbsp;wget<br/>
-&nbsp;&nbsp;nano<br/>
+&nbsp;&nbsp;- open-vm-tools (and dependencies)<br/>
+&nbsp;&nbsp;- hyperv-daemons (and dependencies)<br/>
+&nbsp;&nbsp;- wget<br/>
+&nbsp;&nbsp;- nano<br/>
 <br/>
-**Note:** The reason behind not including them with the code is because of all the licensing mumbu-jumbo legalese jargon.<br/>
+**Note:** The reason behind not including them with the code is because of all the licensing mumbo jumbo legalese jargon.<br/>
 <br/>
 **WARNING:** If you download this code through Windows GIT for using it with WSL, remember that it changes the LF to CRLF in the sh file.<br/>
 <br/>
