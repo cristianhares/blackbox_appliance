@@ -72,14 +72,14 @@ if [ $# -ne 0 ]; then
 		# Default ISO creation
         -d|--default)
 			echo "------------------------------------------------------------"
-            echo "Running ISO creation process as default"
+            echo "Running ISO creation process as default template"
 			echo "------------------------------------------------------------"
 			TEMPLATE="default"
             ;;
-		# ISO with Azure Sentinel CEF collector & OMS Agent.
+		# ISO that later installs Azure Sentinel CEF collector & OMS Agent in the sytem.
         -azs|--azuresentinel)
 			echo "------------------------------------------------------------"
-            echo "Running ISO creation with MS Azure Sentinel collector"
+            echo "Running ISO creation with MS Azure Sentinel collector template"
 			echo "------------------------------------------------------------"
 			TEMPLATE="msazsentinel"
             ;;
