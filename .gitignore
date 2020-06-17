@@ -1,0 +1,7 @@
+.vscode/*
+logs/*
+extras/*
+iso_input/*
+iso_mount/*
+iso_extract/*
+iso_output/*
