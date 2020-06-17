@@ -7,34 +7,24 @@ A Linux-based automatic installation multi-purpose closed-up hardened appliance.
 <br/>
 If you found it useful and if you can, consider buying me a coffee :) https://buymeacoff.ee/cristianhares<br/>
 <br/>
-Small History: Over my years working with SIEMs and other vendor's apppliances,<br/>
-I was always surprised by the fact there wasn't an open source appliance that would make the<br/>
-same experience of a closed-up box where you could run your own application, so I had this idea<br/>
-sitting there for quite some time. An example of this was a cheap Syslog collector with <br/>
-store-and-forward capabilities without paying for the crazy licensing fees of a vendor collector.<br/>
+Small History: Over my years working with SIEMs and other vendor's apppliances, I was always surprised by the fact there wasn't an open source appliance that would make the same experience of a closed-up box where you could run your own application, so I had this idea sitting there for quite some time. An example of this was a cheap Syslog collector with store-and-forward capabilities without paying for the crazy licensing fees of a vendor collector.<br/>
 <br/>
 **Current State**:<br/>
-The BlackBox appliance right now is based on Centos7 and should work with RHEL 7/8 and <br/>
-Centos 8, still most Enterprise tech supports major version 7.<br/>
+The BlackBox appliance right now is based on Centos7 and should work with RHEL 7/8 and Centos 8, still most Enterprise tech supports major version 7.<br/>
 <br/>
-The system has 3 users, the root (disabled), the sysadmin (with sudo privs) which the "Service Provider" controls,<br/>
-and the netadmin which the "customer" controls and can only set networking parameters.<br/>
+The system has 3 users, the root (disabled), the sysadmin (with sudo privs) which the "Service Provider" controls, and the netadmin which the "customer" controls and can only set networking parameters.<br/>
 <br/>
-So the idea is basically that you ("the Service Provider") provide your "customer" with a plug-and-play system,<br/>
-where they don't have to do anything, and you can add a command and control channel to call home or<br/>
-talk to a central server if needed.<br/>
+So the idea is basically that you ("the Service Provider") provide your "customer" with a plug-and-play system, where they don't have to do anything, and you can add a command and control channel to call home or talk to a central server if needed.<br/>
 <br/>
 Note: the current state is a working PoC, so most likely still has bugs/missing things that I haven't found yet.<br/>
 <br/>
-This solution will use Centos 7 minimal as a base, Centos 8 no longer has minimal but it should work<br/>
-editing the code (line 156, *comps.xml) to detect the repository metadata you want to use.<br/>
+This solution will use Centos 7 minimal as a base, Centos 8 no longer has minimal but it should work editing the code (line 156, *comps.xml) to detect the repository metadata you want to use.<br/>
 <br/>
 There's this great project for a Centos 8 minimal that's worthy to look at: https://github.com/uboreas/centos-8-minimal<br/>
 <br/>
-Since Ubuntu allows kickstart it can be made to work as the source distro,<br/>
-but the code is not ready yet to handle the way ubuntu manages it repositories.<br/>
+Since Ubuntu allows kickstart it can be made to work as the source distro, but the code is not ready yet to handle the way ubuntu manages it repositories.<br/>
 <br/>
-**PS:** I know the logo in the splash.png is ugly, is the best I could come up with with Paint3D :P.<br/>
+**PS:** I know the logo is a bit ugly, is the best I could come up with with Paint3D :P.<br/>
 <br/>
 **Some ideas**<br/>
 Some of the following ideas I'll try to deploy them as "templates" in the future.<br/>
@@ -58,9 +48,7 @@ Some of the following ideas I'll try to deploy them as "templates" in the future
 
 ------------------------------------------------------------------
 **Package Requirements**<br/>
-The scripts for the ISO generation are based to run on linux, in windows I use WSL for this,<br/>
-the main script will attempt to install and download them in your distro if available from the repos,<br/>
-although i know in newer ubuntu's some are not present, and I haven't tested it yet in Suse-based ones.<br/>
+The scripts for the ISO generation are based to run on linux, in windows I use WSL for this, the main script will attempt to install and download them in your distro if available from the repos, although I know in newer ubuntu's some are not present, and I haven't tested it yet in Suse-based ones.<br/>
 <br/>
 Main Script (it will try to download them):<br/>
 &nbsp;&nbsp;- genisoimage<br/>
@@ -81,7 +69,7 @@ Generated ISO (it will try to download them for Centos 7):<br/>
 
 ------------------------------------------------------------------
 **Instructions for ISO generation**<br/>
-Download the Centos7 minimal ISO of the minor version of your choosing and put it in the ISO_INPUT_DIR folder defined in the script (default: iso_input).<br/>
+(Optional, the script will do it for you if needed) Download the Centos7 minimal ISO of the minor version of your choosing and put it in the ISO_INPUT_DIR folder defined in the script (default: iso_input).<br/>
 <br/>
 Do NOT forget to edit your environment parameters at the start of the main script (create_blackbox_iso.sh).<br/>
 <br/>
