@@ -7,7 +7,7 @@ A Linux-based automatic installation multi-purpose closed-up hardened appliance.
 <br/>
 If you found it useful and if you can, consider buying me a coffee :) https://buymeacoff.ee/cristianhares or https://ko-fi.com/cristianhares<br/>
 <br/>
-Small History: Over my years working with SIEMs and other vendor's apppliances, I was always surprised by the fact there wasn't an open source appliance that would make the same experience of a closed-up box where you could run your own application, so I had this idea sitting there for quite some time. An example of this was a cheap Syslog collector with store-and-forward capabilities without paying for the crazy licensing fees of a vendor collector.<br/>
+Small History: Over my years working with SIEMs and other vendor's appliances, I was always surprised by the fact there wasn't an open source appliance that would make the same experience of a closed-up box where you could run your own application, so I had this idea sitting there for quite some time. An example of this was a cheap Syslog collector with store-and-forward capabilities without paying for the crazy licensing fees of a vendor collector.<br/>
 <br/>
 **Current State**:<br/>
 The BlackBox appliance right now is based on Centos7 and should work with RHEL 7/8 and Centos 8, still most Enterprise tech supports major version 7.<br/>
