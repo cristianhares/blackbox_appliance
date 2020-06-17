@@ -62,7 +62,7 @@ Generated ISO (it will try to download them for Centos 7):<br/>
 &nbsp;&nbsp;- wget<br/>
 &nbsp;&nbsp;- nano<br/>
 <br/>
-**Note:** The reason behind not including them with the code is because of all the licensing mumbo jumbo legalese jargon.<br/>
+**Note:** The reason behind not including the package requirements with the code is because of all the licensing mumbo jumbo legalese jargon required to do so.<br/>
 <br/>
 **WARNING:** If you download this code through Windows GIT for using it with WSL, remember that it changes the LF to CRLF in the sh file.<br/>
 <br/>
