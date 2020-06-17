@@ -47,8 +47,8 @@ usage()
 {
     echo "usage: $1 [OPTIONS]"
     echo "Options:"
-    echo "  -d --default               default ISO creation process."
-    echo "  -azs, --azuresentinel        ISO with Azure Sentinel CEF collector & OMS Agent."
+    echo "  -d | --default               default ISO creation process."
+    echo "  -azs | --azuresentinel        ISO with Azure Sentinel CEF collector & OMS Agent."
 	echo "                             Note: requires the workspace ID and shared key set in script"
     echo "  -? | -h | --help           shows this usage text."
 }
