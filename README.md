@@ -80,10 +80,10 @@ You can edit the CONFIG_INPUT_DIR/post_installation.sh for the commands to run a
 **usage:** ./create_blackbox_iso.sh [OPTIONS]<br/>
 <br/>
 optional arguments:<br/>
-&nbsp;&nbsp;-d --default&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default ISO creation process.<br/>
+&nbsp;&nbsp;-d, --default&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default ISO creation process.<br/>
 &nbsp;&nbsp;-azs, --azuresentinel&nbsp;&nbsp;&nbsp;&nbsp;ISO with Azure Sentinel CEF collector & OMS Agent.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note: requires the workspace ID, shared key and system hostname set in main script.<br/>
-&nbsp;&nbsp;-? | -h | --help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shows this usage text.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note: requires the workspace ID, shared key and system hostname set in main script.<br/>
+&nbsp;&nbsp;-? | -h | --help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shows this usage text.<br/>
 <br/>
 
 ------------------------------------------------------------------
