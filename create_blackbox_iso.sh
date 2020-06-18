@@ -302,7 +302,7 @@ fi
 echo "Creating ISO File"
 echo "------------------------------------------------------------"
 
-genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o $HOME_DIR/$ISO_OUTPUT_DIR/$ISO_OUTPUT_NAME $HOME_DIR/$ISO_EXTRACT_DIR >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -R -J -o $HOME_DIR/$ISO_OUTPUT_DIR/$ISO_OUTPUT_NAME $HOME_DIR/$ISO_EXTRACT_DIR >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 
 ISO_OUTPUT_FILE=$(find $HOME_DIR/$ISO_OUTPUT_DIR -name $ISO_OUTPUT_NAME -exec echo {} \;)
 
