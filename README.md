@@ -16,13 +16,15 @@ The system has 3 users, the root (disabled), the sysadmin (with sudo privs) whic
 <br/>
 So the idea is basically that you ("the Service Provider") provide your "customer" with a plug-and-play system, where they don't have to do anything, and you can add a command and control channel to call home or talk to a central server if needed.<br/>
 <br/>
-Note: the current state is a working PoC, so most likely still has bugs/missing things that I haven't found yet.<br/>
+Note: System has been hardened in accordance to most of the checks of the CIS Benchmark, even so it is likely it still has bugs/missing things that I haven't found yet.<br/>
 <br/>
 This solution will use Centos 7 minimal as a base, Centos 8 no longer has minimal but it should work editing the code (line 156, *comps.xml) to detect the repository metadata you want to use.<br/>
 <br/>
 There's this great project for a Centos 8 minimal that's worthy to look at: https://github.com/uboreas/centos-8-minimal<br/>
 <br/>
 Since Ubuntu allows kickstart it can be made to work as the source distro, but the code is not ready yet to handle the way ubuntu manages it repositories.<br/>
+<br/>
+**Note:** If you download this code through Windows GIT for using it with WSL, remember that it changes the LF to CRLF in the sh file, so use the dos2unix program.<br/>
 <br/>
 **PS:** I know the logo is a bit ugly, is the best I could come up with with Paint3D :P.<br/>
 <br/>
@@ -44,6 +46,7 @@ Some of the following ideas I'll try to deploy them as "templates" in the future
 &nbsp;&nbsp;- Add to the ISO repo extra packages of your choosing.<br/>
 &nbsp;&nbsp;- Check with ksvalidator if the ks.cfg is valid prior to ISO creation.<br/>
 &nbsp;&nbsp;- Hash and salt the passwords using SHA512.<br/>
+&nbsp;&nbsp;- System has been hardened in accordance to most of the checks of the CIS Benchmark.<br/>
 &nbsp;&nbsp;- Microsoft Azure Sentinel CEF rsyslog collector with OMS Agent template.<br/>
 
 ------------------------------------------------------------------
@@ -61,10 +64,10 @@ Generated ISO (it will try to download them for Centos 7):<br/>
 &nbsp;&nbsp;- hyperv-daemons (and dependencies)<br/>
 &nbsp;&nbsp;- wget<br/>
 &nbsp;&nbsp;- nano<br/>
+&nbsp;&nbsp;- aide<br/>
+&nbsp;&nbsp;- tcp_wrappers<br/>
 <br/>
 **Note:** The reason behind not including the package requirements with the code is because of all the licensing mumbo jumbo legalese jargon required to do so.<br/>
-<br/>
-**WARNING:** If you download this code through Windows GIT for using it with WSL, remember that it changes the LF to CRLF in the sh file.<br/>
 <br/>
 
 ------------------------------------------------------------------
