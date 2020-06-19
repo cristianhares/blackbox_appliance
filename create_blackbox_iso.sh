@@ -27,14 +27,21 @@ ISO_MIRROR_FILE="CentOS-7-x86_64-Minimal-2003.iso"
 # TODO: Not yet implemented
 MAIN_NAME="BlackBox Appliance"
 
-# Password variables, it will be hashed later
+# Password variables for bootloader and root, it will be hashed later
+PASSWORD_BOOTLOADER="ApplBoot01!"
 PASSWORD_ROOT="Appliance01!"
+
+# Password variables for users, they will be asked to be changed on first login
 PASSWORD_SYSADMIN="Appliance02!"
 PASSWORD_NETADMIN="Appliance03!"
 
 # System configuration variables
 SYSTEM_FQDN_HOSTNAME=""
 SYSTEM_PROXY=""
+
+# Syslog configuration, not compatible with MS Azure Sentinel template
+# TODO: Not yet implemented
+SYSLOG_DESTINATION=""
 
 # MS Azure template variables
 AZ_WORKSPACE_ID=""
@@ -53,10 +60,12 @@ usage()
     echo "  -? | -h | --help           shows this usage text."
 }
 
+
 # Create log file folder
 if [ ! -d "$HOME_DIR/$LOG_FILE_DIR" ]; then
 	mkdir $HOME_DIR/$LOG_FILE_DIR
 fi
+
 
 # Create log file or reload it
 if [ -n "$HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME" ]; then
@@ -65,6 +74,7 @@ if [ -n "$HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME" ]; then
 else
 	touch $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME
 fi
+
 
 # Make a choice based on parameters passed
 if [ $# -ne 0 ]; then
@@ -96,12 +106,14 @@ else
     exit 1
 fi
 
+
 # Verify the input ISO folder exists and the ISO has been copied over
 if [ ! -d "$HOME_DIR/$ISO_INPUT_DIR" ]; then
 	mkdir $HOME_DIR/$ISO_INPUT_DIR
 fi
 
 ISO_INPUT_FILE=$(find $HOME_DIR/$ISO_INPUT_DIR -name "*.iso" -exec echo {} \;)
+
 
 # Check if ISO exists
 if [ -z "$ISO_INPUT_FILE" ]; then
@@ -112,6 +124,7 @@ else
     echo "INFO: input ISO already found in $HOME_DIR/$ISO_INPUT_DIR/"
 	echo "------------------------------------------------------------"
 fi
+
 
 # Create directories if missing
 if [ ! -d "$HOME_DIR/$ISO_MOUNT_DIR" ]; then
@@ -130,6 +143,7 @@ if [ ! -d "$HOME_DIR/$CUSTOM_PACKAGES" ]; then
 	mkdir $HOME_DIR/$CUSTOM_PACKAGES
 fi
 
+
 # Get the OS to determine package manager, and install dependencies
 echo "Determining OS and downloading required binaries"
 echo "------------------------------------------------------------"
@@ -144,8 +158,8 @@ case $CURRENT_OS in
 		# Download required extras if Centos 7
 		if [ $CURRENT_MAJOR=7 ]; then
 			# install and reinstall subcommand has to be used in case source system has one of the packages installed
-			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ install hyperv-daemons open-vm-tools wget nano >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ reinstall hyperv-daemons open-vm-tools wget nano >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ install hyperv-daemons open-vm-tools wget nano aide tcp_wrappers >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ reinstall hyperv-daemons open-vm-tools wget nano aide tcp_wrappers >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 		else
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
@@ -174,6 +188,7 @@ case $CURRENT_OS in
 	;;
 esac
 
+
 # Mount ISO and extract its contents with all files including hidden ones
 echo "Mounting ISO file and copying content to temporary directory"
 echo "------------------------------------------------------------"
@@ -189,11 +204,13 @@ chmod 777 -R $HOME_DIR/$ISO_EXTRACT_DIR/
 echo "ISO has been dismounted"
 echo "------------------------------------------------------------"
 
+
 # If the cp alias exists, remove the -i most systems aliases in the bash profile, and later reactivate
 if alias cp 2>/dev/null; then
 	unalias cp
 	ALIAS_EXISTED="1"
 fi
+
 
 # Verify the kickstart file
 echo "Verifying kickstart file"
@@ -209,6 +226,7 @@ if [[ $(ksvalidator $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg) = *deprecated* ]] ; then
 	exit 1
 fi
 
+
 # Copy customized files into the respective folder
 echo "Copying customized files to temporary directory"
 echo "------------------------------------------------------------"
@@ -217,8 +235,15 @@ cp $HOME_DIR/$CONFIG_INPUT_DIR/isolinux.cfg $HOME_DIR/$ISO_EXTRACT_DIR/isolinux/
 cp $HOME_DIR/$CONFIG_INPUT_DIR/splash.png $HOME_DIR/$ISO_EXTRACT_DIR/isolinux/splash.png
 cp $HOME_DIR/$CONFIG_INPUT_DIR/grub.cfg $HOME_DIR/$ISO_EXTRACT_DIR/EFI/BOOT/grub.cfg
 
-# Search the password settings commands in the base ks.cfg and replace the $6 SHA512 Hashes with the new ones
+# Search the password settings commands in the base ks.cfg and replace the $6 SHA512 Hashes with the new ones in the new file in ISO_EXTRACT_DIR
 python3 $HOME_DIR/$SUPPORTING_BINS/password_replacer.py $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg $HOME_DIR/$ISO_EXTRACT_DIR/ks.cfg $PASSWORD_ROOT $PASSWORD_SYSADMIN $PASSWORD_NETADMIN
+
+
+# Set the bootloader password
+PASS_BOOTLOADER_PBKDF2=$(echo -e "$PASSWORD_BOOTLOADER\n$PASSWORD_BOOTLOADER" | grub2-mkpasswd-pbkdf2 | awk '/grub.pbkdf/{print$NF}')
+
+sed -i "s|^bootloader.*|bootloader --iscrypted --password=$PASS_BOOTLOADER_PBKDF2|g" $HOME_DIR/$ISO_EXTRACT_DIR/ks.cfg
+
 
 # Check for extra RPMs and reconstruct the repos
 rpmcount=`ls -1 $HOME_DIR/$CUSTOM_PACKAGES/*.rpm 2>/dev/null | wc -l`
@@ -239,14 +264,17 @@ if [ $rpmcount != 0 ]; then
 	done
 fi
 
+
 # Create the custom scripts folder before ISO creation
 if [ ! -d "$HOME_DIR/$ISO_EXTRACT_DIR/scripts" ]; then
 	mkdir $HOME_DIR/$ISO_EXTRACT_DIR/scripts
 fi
 
+
 # Copy the customization service and script to the ISO extract folder
 cp $HOME_DIR/$CONFIG_INPUT_DIR/bootstrap_install.service $HOME_DIR/$ISO_EXTRACT_DIR/scripts >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 cp $HOME_DIR/$CONFIG_INPUT_DIR/post_installation.sh $HOME_DIR/$ISO_EXTRACT_DIR/scripts >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+
 
 # Set hostname on first boot if variable length is greater than 1
 if [ ${#SYSTEM_FQDN_HOSTNAME} -ge 1 ]; then
@@ -293,10 +321,12 @@ case $TEMPLATE in
 	;;
 esac
 
+
 # Restore alias if existed
 if [ "$ALIAS_EXISTED"="1" ]; then
 	alias cp='cp -i'
 fi
+
 
 # Create the ISO and remove the extracted files
 echo "Creating ISO File"
@@ -306,6 +336,7 @@ genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -
 
 ISO_OUTPUT_FILE=$(find $HOME_DIR/$ISO_OUTPUT_DIR -name $ISO_OUTPUT_NAME -exec echo {} \;)
 
+
 # Check if ISO exists
 if [ -z "$ISO_OUTPUT_FILE" ]; then
     echo "Failed to create ISO file, check the logs"
@@ -314,6 +345,7 @@ else
     echo "ISO successfully created in $HOME_DIR/$ISO_OUTPUT_DIR/"
 	echo "------------------------------------------------------------"
 fi
+
 
 # Remove extracted data
 rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
