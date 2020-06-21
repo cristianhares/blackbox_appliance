@@ -5,3 +5,4 @@ iso_input/*
 iso_mount/*
 iso_extract/*
 iso_output/*
+config_input/syslogca.pem
