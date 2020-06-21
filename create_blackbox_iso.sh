@@ -168,6 +168,7 @@ if ! [ -e "$ISO_INPUT_FILE" ]; then
     echo "PROCESSING: Input ISO not found, downloading CentOS7 minimal ISO"
 	echo "----------------------------------------------------------------------"
 	if which wget >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1; then
+		# Use wget if wget not present
 		if wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE; then
 			echo "INFO: Correctly downloaded ISO file for selected OS distro"
 			echo "----------------------------------------------------------------------"
@@ -176,7 +177,18 @@ if ! [ -e "$ISO_INPUT_FILE" ]; then
 			echo "----------------------------------------------------------------------"
 			exit 1
 		fi
+	elif which curl >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1; then
+		# Use curl if wget not present
+		if curl -o $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE; then
+			echo "INFO: Correctly downloaded ISO file for selected OS distro"
+			echo "----------------------------------------------------------------------"
+		else
+			echo "ERROR: Failed to download ISO file, check previous output"
+			echo "----------------------------------------------------------------------"
+			exit 1
+		fi
 	else
+		# Download wget from the correspoding OS repo manager if both wget and curl are not present
 		source $HOME_DIR/$SUPPORTING_BINS/download_wget.sh
 		if wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE; then
 			echo "INFO: Correctly downloaded ISO file for selected OS distro"
