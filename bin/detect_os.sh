@@ -18,7 +18,7 @@ case $CURRENT_OS in
 		if [[ "$CURRENT_MAJOR" == "6" || "$CURRENT_MAJOR" == "7" || "$CURRENT_MAJOR" == "8" || "$CURRENT_MAJOR" == "30" || "$CURRENT_MAJOR" == "31" || "$CURRENT_MAJOR" == "32" ]]; then
 
 			# Download required packages for ISO generation
-			yum -y -q install wget genisoimage python3 pykickstart createrepo yum-utils >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+			yum -y -q install genisoimage python3 pykickstart createrepo yum-utils >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 
 			# Add the update repo for the specific version of the distro
 			touch /etc/yum.repos.d/releasepackages.repo
@@ -55,7 +55,7 @@ case $CURRENT_OS in
 			apt-get -q install genisoimage python3 python-pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
+				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
 			done
 		else
 			echo "ERROR: Ubuntu distro used for generating ISO will not have the packages required"
@@ -72,7 +72,7 @@ case $CURRENT_OS in
 			apt-get -q install genisoimage python3 python-pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
+				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
 			done
 		else
 			echo "ERROR: Ubuntu distro used for generating ISO will not have the packages required"
@@ -91,7 +91,7 @@ case $CURRENT_OS in
 
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI$reqpackage
+				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI$reqpackage
 			done
 		else
 			echo "ERROR: Suse distro used for generating ISO will not have the packages required"

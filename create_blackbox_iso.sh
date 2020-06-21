@@ -30,7 +30,7 @@ ISO_PACKS_URI="/os/$ISO_ARCH/"
 ISO_UPDATES_URI="/updates/$ISO_ARCH/"
 
 # Packages required for ISO
-PACKAGES_SYSTEM="hyperv-daemons open-vm-tools wget nano aide tcp_wrappers"
+PACKAGES_SYSTEM="hyperv-daemons open-vm-tools aide tcp_wrappers"
 
 # Template to use from TEMPLATES_DIR for hardening system
 # Note: Some hardening options are set via the ks.cfg
