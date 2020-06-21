@@ -168,10 +168,24 @@ if ! [ -e "$ISO_INPUT_FILE" ]; then
     echo "PROCESSING: Input ISO not found, downloading CentOS7 minimal ISO"
 	echo "----------------------------------------------------------------------"
 	if which wget >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1; then
-		wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE
+		if wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE; then
+			echo "INFO: Correctly downloaded ISO file for selected OS distro"
+			echo "----------------------------------------------------------------------"
+		else
+			echo "ERROR: Failed to download ISO file, check previous output"
+			echo "----------------------------------------------------------------------"
+			exit 1
+		fi
 	else
 		source $HOME_DIR/$SUPPORTING_BINS/download_wget.sh
-		wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE
+		if wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE; then
+			echo "INFO: Correctly downloaded ISO file for selected OS distro"
+			echo "----------------------------------------------------------------------"
+		else
+			echo "ERROR: Failed to download ISO file, check previous output"
+			echo "----------------------------------------------------------------------"
+			exit 1
+		fi
 	fi
 else
     echo "INFO: Input ISO already found in $HOME_DIR/$ISO_INPUT_DIR/"
