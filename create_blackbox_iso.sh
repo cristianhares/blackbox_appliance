@@ -2,7 +2,7 @@
 # Create the blackbox appliance ISO file.
 # Author: Cristian H. Ares (https://www.linkedin.com/in/cares/)
 
-#---------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
 # EDIT FROM HERE
 # Environment variables for ISO creation
 HOME_DIR=$(pwd)
@@ -11,17 +11,30 @@ SUPPORTING_BINS=bin
 ISO_INPUT_DIR=iso_input
 ISO_MOUNT_DIR=iso_mount
 ISO_EXTRACT_DIR=iso_extract
+ISO_EXTRAS_DIR=extras
 ISO_OUTPUT_DIR=iso_output
 ISO_OUTPUT_NAME=bbappliance.iso
 CUSTOM_PACKAGES=extras
+TEMPLATES_DIR=templates
 LOG_FILE_DIR=logs
 LOG_FILE_NAME=bbappliance_iso.log
 
 # ISO download variables
-ISO_MIRROR_URL="http://mirror.xnet.co.nz/pub/centos/7.8.2003/"
-ISO_FILE_URI="isos/x86_64/"
-ISO_PACKS_URI="os/x86_64/Packages/"
-ISO_MIRROR_FILE="CentOS-7-x86_64-Minimal-2003.iso"
+ISO_MIRROR_URL="http://mirror.xnet.co.nz/pub/centos/" # Change to your closest mirror
+ISO_MIRROR_FILE="CentOS-7-x86_64-Minimal-2003.iso" # Change to the chosen distro ISO file name
+ISO_RELEASE="7.8.2003" # Change to the specific ISO release
+ISO_ARCH="x86_64"
+ISO_GPG_KEY="RPM-GPG-KEY-CentOS-7" # Change to the non-dev GPG Key inside the ISO
+ISO_FILE_URI="/isos/$ISO_ARCH"
+ISO_PACKS_URI="/os/$ISO_ARCH/"
+ISO_UPDATES_URI="/updates/$ISO_ARCH/"
+
+# Packages required for ISO
+PACKAGES_SYSTEM="hyperv-daemons open-vm-tools wget nano aide tcp_wrappers"
+
+# Template to use from TEMPLATES_DIR for hardening system
+# Note: Some hardening options are set via the ks.cfg
+HARDENING_TEMPLATE=template_CIS_Centos7.sh
 
 # Customization variables
 # TODO: Not yet implemented
@@ -39,36 +52,70 @@ PASSWORD_NETADMIN="Appliance03!"
 SYSTEM_FQDN_HOSTNAME=""
 SYSTEM_PROXY=""
 
-# Syslog configuration, not compatible with MS Azure Sentinel template
-# TODO: Not yet implemented
-SYSLOG_DESTINATION=""
+# Syslog destination configuration for rsyslog collector template
+SYSLOG_DESTINATION="dest123"
+SYSLOG_DESTINATION_PORT="6514"
+SYSLOG_DESTINATION_PROTOCOL="TCP" # Set to UDP for change in protocol
+SYSLOG_DESTINATION_TLS="NO" # Set to YES if destinations is unauth TLS
+
+# Syslog trusted CA certs file location, copy your pem file to the $CONFIG_INPUT_DIR directory
+SYSLOG_TRUST_CERTS="/etc/rsyslog/syslogca.pem"
+
+# Syslog cache for forwarding, set around 70% of disk space % set in ks.cfg and computer disk.
+SYSLOG_CACHE_DIR="/var/log/syslog"
+SYSLOG_CACHE_SIZE="4g" # Set as XXg in gigabytes
 
 # MS Azure template variables
 AZ_WORKSPACE_ID=""
 AZ_SHARED_KEY=""
 
 # TO HERE
-#---------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
 
 usage()
 {
     echo "usage: $1 [OPTIONS]"
     echo "Options:"
-    echo "  -d | --default               default ISO creation process."
-    echo "  -azs | --azuresentinel        ISO with Azure Sentinel CEF collector & OMS Agent."
-	echo "                             Note: requires the workspace ID and shared key set in script"
-    echo "  -? | -h | --help           shows this usage text."
+    echo "  -d   | --default             default ISO creation process."
+	echo "  -s   | -syslogcollector      ISO with RSyslog syslog collector appliance."
+    echo "  -azs | --azuresentinel       ISO with Azure Sentinel CEF collector & OMS Agent."
+	echo "                               Note: requires the workspace ID and shared key set in script"
+    echo "  -?   | -h | --help           shows this usage text."
 }
 
+# Obtain OS details from the /etc/os-release
+CURRENT_OS=$(awk -F'"' '/^NAME=/{print tolower($2)}' /etc/os-release)
+CURRENT_MAJOR=$(awk -F'"' '/^VERSION_ID=/{print tolower($2)}' /etc/os-release)
 
-# Create log file folder
-if [ ! -d "$HOME_DIR/$LOG_FILE_DIR" ]; then
+
+# Create required directories if missing
+if [ ! -e "$HOME_DIR/$LOG_FILE_DIR" ]; then
 	mkdir $HOME_DIR/$LOG_FILE_DIR
+fi
+
+if [ ! -e "$HOME_DIR/$ISO_MOUNT_DIR" ]; then
+	mkdir $HOME_DIR/$ISO_MOUNT_DIR
+fi
+
+if [ ! -e "$HOME_DIR/$ISO_EXTRACT_DIR" ]; then
+	mkdir $HOME_DIR/$ISO_EXTRACT_DIR
+fi
+
+if [ ! -e "$HOME_DIR/$ISO_OUTPUT_DIR" ]; then
+	mkdir $HOME_DIR/$ISO_OUTPUT_DIR
+fi
+
+if [ ! -e "$HOME_DIR/$CUSTOM_PACKAGES" ]; then
+	mkdir $HOME_DIR/$CUSTOM_PACKAGES
+fi
+
+if [ ! -e "$HOME_DIR/$ISO_INPUT_DIR" ]; then
+	mkdir $HOME_DIR/$ISO_INPUT_DIR
 fi
 
 
 # Create log file or reload it
-if [ -n "$HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME" ]; then
+if [ -e "$HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME" ]; then
 	rm -f $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME
 	touch $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME
 else
@@ -76,22 +123,29 @@ else
 fi
 
 
-# Make a choice based on parameters passed
+# Make a choice based on parameters passed to the script
 if [ $# -ne 0 ]; then
     case "$1" in
 		# Default ISO creation
         -d|--default)
-			echo "------------------------------------------------------------"
-            echo "Running ISO creation process as default template"
-			echo "------------------------------------------------------------"
+			echo "----------------------------------------------------------------------"
+            echo "INFO: Running ISO creation process as default template"
+			echo "----------------------------------------------------------------------"
 			TEMPLATE="default"
             ;;
 		# ISO that later installs Azure Sentinel CEF collector & OMS Agent in the sytem.
         -azs|--azuresentinel)
-			echo "------------------------------------------------------------"
-            echo "Running ISO creation with MS Azure Sentinel collector template"
-			echo "------------------------------------------------------------"
+			echo "----------------------------------------------------------------------"
+            echo "INFO: Running ISO creation with MS Azure Sentinel collector template"
+			echo "----------------------------------------------------------------------"
 			TEMPLATE="msazsentinel"
+            ;;
+		# ISO that later installs and configures a syslog collector.
+        -s|--syslogcollector)
+			echo "----------------------------------------------------------------------"
+            echo "INFO: Running ISO creation with the rsyslog collector template"
+			echo "----------------------------------------------------------------------"
+			TEMPLATE="rsyslogcollector"
             ;;
 		# Print the help message
         -\? | -h | --help)
@@ -107,102 +161,53 @@ else
 fi
 
 
-# Verify the input ISO folder exists and the ISO has been copied over
-if [ ! -d "$HOME_DIR/$ISO_INPUT_DIR" ]; then
-	mkdir $HOME_DIR/$ISO_INPUT_DIR
-fi
+# Check if ISO exists, and if not, download it into the ISO_INPUT_DIR folder
+ISO_INPUT_FILE=$HOME_DIR/$ISO_INPUT_DIR/$ISO_MIRROR_FILE
 
-ISO_INPUT_FILE=$(find $HOME_DIR/$ISO_INPUT_DIR -name "*.iso" -exec echo {} \;)
-
-
-# Check if ISO exists
-if [ -z "$ISO_INPUT_FILE" ]; then
-    echo "ERROR: Input ISO not found, downloading CentOS7 minimal ISO"
-	echo "------------------------------------------------------------"
-	wget -O $HOME_DIR/$ISO_INPUT_DIR/$ISO_MIRROR_FILE $ISO_MIRROR_URL$ISO_FILE_URI$ISO_MIRROR_FILE
+if ! [ -e "$ISO_INPUT_FILE" ]; then
+    echo "PROCESSING: Input ISO not found, downloading CentOS7 minimal ISO"
+	echo "----------------------------------------------------------------------"
+	if which wget >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1; then
+		wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE
+	else
+		source $HOME_DIR/$SUPPORTING_BINS/download_wget.sh
+		wget -O $ISO_INPUT_FILE $ISO_MIRROR_URL$ISO_RELEASE$ISO_FILE_URI$ISO_MIRROR_FILE
+	fi
 else
-    echo "INFO: input ISO already found in $HOME_DIR/$ISO_INPUT_DIR/"
-	echo "------------------------------------------------------------"
+    echo "INFO: Input ISO already found in $HOME_DIR/$ISO_INPUT_DIR/"
+	echo "----------------------------------------------------------------------"
 fi
-
-
-# Create directories if missing
-if [ ! -d "$HOME_DIR/$ISO_MOUNT_DIR" ]; then
-	mkdir $HOME_DIR/$ISO_MOUNT_DIR
-fi
-
-if [ ! -d "$HOME_DIR/$ISO_EXTRACT_DIR" ]; then
-	mkdir $HOME_DIR/$ISO_EXTRACT_DIR
-fi
-
-if [ ! -d "$HOME_DIR/$ISO_OUTPUT_DIR" ]; then
-	mkdir $HOME_DIR/$ISO_OUTPUT_DIR
-fi
-
-if [ ! -d "$HOME_DIR/$CUSTOM_PACKAGES" ]; then
-	mkdir $HOME_DIR/$CUSTOM_PACKAGES
-fi
-
-
-# Get the OS to determine package manager, and install dependencies
-echo "Determining OS and downloading required binaries"
-echo "------------------------------------------------------------"
-
-CURRENT_OS=$(awk -F= '/^NAME/{print tolower($2)}' /etc/os-release)
-CURRENT_MAJOR=$(awk -F= '/^VERSION_ID/{print tolower($2)}' /etc/os-release)
-
-case $CURRENT_OS in
-	*"centos"* | *"fedora"* | *"red hat"*)
-		# Download required packages for ISO generation
-		yum -y -q install wget genisoimage python3 pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-		# Download required extras if Centos 7
-		if [ $CURRENT_MAJOR=7 ]; then
-			# install and reinstall subcommand has to be used in case source system has one of the packages installed
-			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ install hyperv-daemons open-vm-tools wget nano aide tcp_wrappers >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-			yum --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ reinstall hyperv-daemons open-vm-tools wget nano aide tcp_wrappers >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-		else
-			# Download the packages for the distro selected
-			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_PACKS_URI$reqpackage
-			done
-		fi
-	;;
-	# TODO: Not tested, code implemented to help with generating ISO
-	*"debian"* | *"ubuntu"*)
-		apt-get -q install genisoimage python3 pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-		# Download the packages for the distro selected
-		for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-			wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_PACKS_URI$reqpackage
-		done
-	;;
-	# TODO: Not tested, code implemented to help with generating ISO
-	*"suse"* | *"sles"*)
-		zypper install -y genisoimage python3 pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-		# Download the packages for the distro selected
-		for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-			wget -q -O $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_PACKS_URI$reqpackage
-		done
-	;;
-	*)
-		echo -n "Unknown OS to determine package manager"
-	;;
-esac
-
 
 # Mount ISO and extract its contents with all files including hidden ones
-echo "Mounting ISO file and copying content to temporary directory"
-echo "------------------------------------------------------------"
+echo "PROCESSING: Mounting ISO file and copying content to temporary directory"
+echo "----------------------------------------------------------------------"
 
-INPUT_ISO_FILE=$(find $HOME_DIR/$ISO_INPUT_DIR -name '*.iso' -exec echo {} \;)
-mount -t iso9660 -o loop $INPUT_ISO_FILE $HOME_DIR/$ISO_MOUNT_DIR/ >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+mount -t iso9660 -o loop $ISO_INPUT_FILE $HOME_DIR/$ISO_MOUNT_DIR/ >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 cp -arf $HOME_DIR/$ISO_MOUNT_DIR/* $HOME_DIR/$ISO_EXTRACT_DIR/
 umount $HOME_DIR/$ISO_MOUNT_DIR/
 
 # Fix for cases where the isolinux files are not allowed to be replaced
 chmod 777 -R $HOME_DIR/$ISO_EXTRACT_DIR/
 
-echo "ISO has been dismounted"
-echo "------------------------------------------------------------"
+echo "INFO: ISO has been dismounted"
+echo "----------------------------------------------------------------------"
+
+
+# Get the OS to determine package manager, and install dependencies
+echo "INFO: Determining OS and downloading required binaries"
+echo "----------------------------------------------------------------------"
+source $HOME_DIR/$SUPPORTING_BINS/detect_os.sh
+
+
+# Download the updates for the ISO packages if yum and yum-utils is present
+if which yum >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1 && which repoquery >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1 ; then
+	echo "PROCESSING: Downloading Updates for the used ISO and adding them"
+	echo "----------------------------------------------------------------------"
+	source $HOME_DIR/$SUPPORTING_BINS/download_iso_updates.sh
+else
+	echo "INFO: No YUM was detected in system, skipping updates download"
+	echo "----------------------------------------------------------------------"
+fi
 
 
 # If the cp alias exists, remove the -i most systems aliases in the bash profile, and later reactivate
@@ -213,23 +218,27 @@ fi
 
 
 # Verify the kickstart file
-echo "Verifying kickstart file"
-echo "------------------------------------------------------------"
-if [[ $(ksvalidator $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg) = *error* ]] ; then
-	echo "Error in kickstart file validation, validate your file with ksvalidator"
-	echo "------------------------------------------------------------"
+echo "PROCESSING: Verifying kickstart file"
+echo "----------------------------------------------------------------------"
+if [[ $(ksvalidator $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg) = *error* ]]; then
+	echo "ERROR: Error in kickstart file validation, validate your file with ksvalidator"
+	echo "----------------------------------------------------------------------"
+	# Remove extracted data
+	rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
 	exit 1
 fi
-if [[ $(ksvalidator $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg) = *deprecated* ]] ; then
-	echo "Deprecated command in kickstart file validation, validate your file with ksvalidator"
-	echo "------------------------------------------------------------"
+if [[ $(ksvalidator $HOME_DIR/$CONFIG_INPUT_DIR/ks.cfg) = *deprecated* ]]; then
+	echo "ERROR: Deprecated command in kickstart file validation, validate your file with ksvalidator"
+	echo "----------------------------------------------------------------------"
+	# Remove extracted data
+	rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
 	exit 1
 fi
 
 
 # Copy customized files into the respective folder
-echo "Copying customized files to temporary directory"
-echo "------------------------------------------------------------"
+echo "PROCESSING: Copying customized files to temporary directory"
+echo "----------------------------------------------------------------------"
 
 cp $HOME_DIR/$CONFIG_INPUT_DIR/isolinux.cfg $HOME_DIR/$ISO_EXTRACT_DIR/isolinux/isolinux.cfg
 cp $HOME_DIR/$CONFIG_INPUT_DIR/splash.png $HOME_DIR/$ISO_EXTRACT_DIR/isolinux/splash.png
@@ -249,14 +258,14 @@ sed -i "s|^bootloader.*|bootloader --iscrypted --password=$PASS_BOOTLOADER_PBKDF
 rpmcount=`ls -1 $HOME_DIR/$CUSTOM_PACKAGES/*.rpm 2>/dev/null | wc -l`
 
 if [ $rpmcount != 0 ]; then
-	echo "Copying RPM files to ISO repository"
-	echo "------------------------------------------------------------"
+	echo "PROCESSING: Copying RPM files to ISO repository"
+	echo "----------------------------------------------------------------------"
 
 	# Copy custom packages from the extras folder to add to the ISO repository if there are any
 	cp $HOME_DIR/$CUSTOM_PACKAGES/*.rpm $HOME_DIR/$ISO_EXTRACT_DIR/Packages/ >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 
-	echo "Rebuilding repository metadata"
-	echo "------------------------------------------------------------"
+	echo "PROCESSING: Rebuilding repository metadata"
+	echo "----------------------------------------------------------------------"
 
 	# Update the ISO yum repository with the added packages
 	for repofile in $HOME_DIR/$ISO_EXTRACT_DIR/repodata/*minimal*comps.xml; do
@@ -266,8 +275,14 @@ fi
 
 
 # Create the custom scripts folder before ISO creation
-if [ ! -d "$HOME_DIR/$ISO_EXTRACT_DIR/scripts" ]; then
+if [ ! -e "$HOME_DIR/$ISO_EXTRACT_DIR/scripts" ]; then
 	mkdir $HOME_DIR/$ISO_EXTRACT_DIR/scripts
+fi
+
+
+# Create the extra files folder before ISO creation
+if [ ! -e "$HOME_DIR/$ISO_EXTRACT_DIR/$ISO_EXTRAS_DIR" ]; then
+	mkdir $HOME_DIR/$ISO_EXTRACT_DIR/$ISO_EXTRAS_DIR
 fi
 
 
@@ -281,25 +296,24 @@ if [ ${#SYSTEM_FQDN_HOSTNAME} -ge 1 ]; then
 	echo "hostname $SYSTEM_FQDN_HOSTNAME" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
 fi
 
+
+# Set Hardening template to system
+cat $HOME_DIR/$TEMPLATES_DIR/$HARDENING_TEMPLATE >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
+
 case $TEMPLATE in
 	"msazsentinel")
 		# TODO: MS AZ Sentinel CEF configuration Script doesn't support a proxy as the OMS agent installation does,
 		# TODO: This asumes the box has direct internet connectivity.
 		# TODO: The sysadmin user can change the OMS agent proxy configuration later on.
 		if [ ${#AZ_WORKSPACE_ID} -ge 10 ] && [ ${#AZ_SHARED_KEY} -ge 10 ] && [ ${#SYSTEM_FQDN_HOSTNAME} -ge 1 ]; then
-			# Add the CEF Agent configuration and OMS Agent installation to the first init script
-			echo "wget https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/DataConnectors/CEF/cef_installer.py&&python cef_installer.py $AZ_WORKSPACE_ID $AZ_SHARED_KEY" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-			# Add the OMS Agent service to the firewall
-			echo "firewall-cmd --permanent --add-service=omsagent-$AZ_WORKSPACE_ID" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-			echo "firewall-cmd --reload" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-			# Disable first init service after finishing and remove script with data
-			echo "systemctl disable bootstrap_install" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-			echo 'rm -- "$0" '>> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
+			source $HOME_DIR/$TEMPLATES_DIR/template_msaz_sentinel.sh
+			echo "INFO: Microsoft Azure Sentinel template files copied"
+			echo "----------------------------------------------------------------------"
 		else
-			echo "Azure Workspace ID, Shared Key or hostname are wrongly set"
-			echo "------------------------------------------------------------"
-			echo "Check your MS Azure variables and try again"
-			echo "------------------------------------------------------------"
+			echo "ERROR: Azure Workspace ID, Shared Key or hostname are wrongly set"
+			echo "----------------------------------------------------------------------"
+			echo "INFO: Check your MS Azure variables and try again"
+			echo "----------------------------------------------------------------------"
 			# Remove extracted data
 			rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
 
@@ -307,17 +321,42 @@ case $TEMPLATE in
 			if [ "$ALIAS_EXISTED"="1" ]; then
 				alias cp='cp -i'
 			fi
-
 			exit 1
+		fi
+
+		echo "INFO: Microsoft Azure Sentinel template files copied"
+		echo "----------------------------------------------------------------------"
+	;;
+	"rsyslogcollector")
+		if [ ${#SYSLOG_DESTINATION} -lt 1 ]; then
+			echo "ERROR: Syslog collector destination is not set, check input"
+			echo "----------------------------------------------------------------------"
+			# Remove extracted data
+			rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
+			exit 1
+		else
+			source $HOME_DIR/$TEMPLATES_DIR/template_rsyslog_collector.sh
+
+			if [[ $SYSLOG_DESTINATION_TLS == "YES" ]]; then
+				if ! [ -e "$HOME_DIR/$CONFIG_INPUT_DIR/syslogca.pem" ]; then
+					echo "TLS syslog was set but no CA file was found, check input"
+					echo "----------------------------------------------------------------------"
+					# Remove extracted data
+					rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
+					exit 1
+				else
+					cp $HOME_DIR/$CONFIG_INPUT_DIR/syslogca.pem $HOME_DIR/$ISO_EXTRACT_DIR/$ISO_EXTRAS_DIR/syslogca.pem
+				fi
+			fi
+
+			echo "INFO: Syslog collector template files copied"
+			echo "----------------------------------------------------------------------"
 		fi
 	;;
 	*)
-		# Disable first init service after finishing and remove script with data
-		echo "systemctl disable bootstrap_install" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-		echo 'rm -- "$0" '>> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
-
-		echo "Default customization files copied"
-		echo "------------------------------------------------------------"
+		source $HOME_DIR/$TEMPLATES_DIR/template_default.sh
+		echo "INFO: Default customization files copied"
+		echo "----------------------------------------------------------------------"
 	;;
 esac
 
@@ -329,21 +368,28 @@ fi
 
 
 # Create the ISO and remove the extracted files
-echo "Creating ISO File"
-echo "------------------------------------------------------------"
+echo "PROCESSING: Creating ISO File"
+echo "----------------------------------------------------------------------"
 
-genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -R -J -o $HOME_DIR/$ISO_OUTPUT_DIR/$ISO_OUTPUT_NAME $HOME_DIR/$ISO_EXTRACT_DIR >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+ISO_OUTPUT_FILE=$HOME_DIR/$ISO_OUTPUT_DIR/$ISO_OUTPUT_NAME
 
-ISO_OUTPUT_FILE=$(find $HOME_DIR/$ISO_OUTPUT_DIR -name $ISO_OUTPUT_NAME -exec echo {} \;)
-
-
-# Check if ISO exists
-if [ -z "$ISO_OUTPUT_FILE" ]; then
-    echo "Failed to create ISO file, check the logs"
-	echo "------------------------------------------------------------"
+# Check if ISO exists from previous generation
+if [ -e "$ISO_OUTPUT_FILE" ]; then
+	if ! rm -f $ISO_OUTPUT_FILE >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1; then
+		echo "ERROR: Failed to remove old ISO file, check the log"
+		echo "----------------------------------------------------------------------"
+		# Remove extracted data
+		rm -rf $HOME_DIR/$ISO_EXTRACT_DIR/*
+		exit 1
+	else
+		genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -R -J -o $ISO_OUTPUT_FILE $HOME_DIR/$ISO_EXTRACT_DIR >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+   		echo "OK: ISO successfully created in $HOME_DIR/$ISO_OUTPUT_DIR/"
+		echo "----------------------------------------------------------------------"
+	fi
 else
-    echo "ISO successfully created in $HOME_DIR/$ISO_OUTPUT_DIR/"
-	echo "------------------------------------------------------------"
+	genisoimage -r -T -J -V "OEMDRV" -input-charset utf-8 -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -R -J -o $ISO_OUTPUT_FILE $HOME_DIR/$ISO_EXTRACT_DIR >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+    echo "OK: ISO successfully created in $HOME_DIR/$ISO_OUTPUT_DIR/"
+	echo "----------------------------------------------------------------------"
 fi
 
 
