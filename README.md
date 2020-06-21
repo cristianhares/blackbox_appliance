@@ -12,42 +12,58 @@ Small History: Over my years working with SIEMs and other vendor's appliances, I
 **Current State**:<br/>
 The BlackBox appliance right now is based on Centos7 and should work with RHEL 7/8 and Centos 8, still most Enterprise tech supports major version 7.<br/>
 <br/>
-The system has 3 users, the root (disabled), the sysadmin (with sudo privs) which the "Service Provider" controls, and the netadmin which the "customer" controls and can only set networking parameters.<br/>
+The system has 3 users, the root (disabled), the sysadmin (with sudo privs) and the netadmin which can only set networking parameters. An example usage of this would be of a "Service Provider" that maintains control of the box, and its "customer" can only change network parameters.<br/>
 <br/>
 So the idea is basically that you ("the Service Provider") provide your "customer" with a plug-and-play system, where they don't have to do anything, and you can add a command and control channel to call home or talk to a central server if needed.<br/>
 <br/>
 Note: System has been hardened in accordance to most of the checks of the CIS Benchmark, even so it is likely it still has bugs/missing things that I haven't found yet.<br/>
 <br/>
-This solution will use Centos 7 minimal as a base, Centos 8 no longer has minimal but it should work editing the code (line 156, *comps.xml) to detect the repository metadata you want to use.<br/>
+This solution will use Centos 7 minimal as a base, Centos 8 no longer has minimal but it should work editing the code (line 156, *comps.xml) to detect the repository metadata you want to use. There's this great project for a Centos 8 minimal that's worthy to look at for this case: https://github.com/uboreas/centos-8-minimal<br/>
 <br/>
-There's this great project for a Centos 8 minimal that's worthy to look at: https://github.com/uboreas/centos-8-minimal<br/>
-<br/>
-Since Ubuntu allows kickstart it can be made to work as the source distro, but the code is not ready yet to handle the way ubuntu manages it repositories.<br/>
+Since Ubuntu allows kickstart it can/could be made to work as the source distro, but the code is not ready yet to handle the way ubuntu manages it repositories.<br/>
 <br/>
 **Note:** If you download this code through Windows GIT for using it with WSL, remember that it changes the LF to CRLF in the sh file, so use the dos2unix program.<br/>
 <br/>
 **PS:** I know the logo is a bit ugly, is the best I could come up with with Paint3D :P.<br/>
 <br/>
-**Some ideas**<br/>
-Some of the following ideas I'll try to deploy them as "templates" in the future.<br/>
-<br/>
-&nbsp;&nbsp;- Generic syslog collector to forward events to a central log system.<br/>
-&nbsp;&nbsp;- Docker node and manage it remotely with swarm.<br/>
-&nbsp;&nbsp;- Add openvpn or any vpn software with certificate auth to talk back securely to your network.<br/>
-&nbsp;&nbsp;- Network scanner with nmap or any other scanning library.<br/>
-&nbsp;&nbsp;- Software remote deployer (relay) for windows/linux systems.<br/>
-<br/>
-**Current functionality**<br/>
-&nbsp;&nbsp;- Create an automated ISO image depending on parameters set in main script.<br/>
-&nbsp;&nbsp;- Automatic installation of system with almost no user interaction.<br/>
-&nbsp;&nbsp;- System is divided by a privileged user and a non-privileged user that can only change networking.<br/>
-&nbsp;&nbsp;- Run commands/installations after first boot via the post_installation.sh script.<br/>
+
+**ISO Creation features**<br/>
+&nbsp;&nbsp;- Automatically downloads required packages for ISO generation depending on your OS distro.<br/>
+&nbsp;&nbsp;- Automatically downloads ISO Linux distro.<br/>
+&nbsp;&nbsp;- Automatically downloads updates since release for the chose distro and add them to the ISO repo (YUM based systems).<br/>
+&nbsp;&nbsp;- Validates the ks.cfg config before creation.<br/>
+&nbsp;&nbsp;- Add extra packages of your choosing by adding them in the extras directory.<br/>
+&nbsp;&nbsp;- Add commands of your choosing either in the ks.cfg post section, or the post_installation.sh script.<br/>
+
+**System Image features**<br/>
+&nbsp;&nbsp;- Automatic System installation with auto partitioning, no user interaction (except for one enter!).<br/>
 &nbsp;&nbsp;- Automatic installation of VM Hypervisor tools depending on platform.<br/>
-&nbsp;&nbsp;- Add to the ISO repo extra packages of your choosing.<br/>
-&nbsp;&nbsp;- Check with ksvalidator if the ks.cfg is valid prior to ISO creation.<br/>
-&nbsp;&nbsp;- Hash and salt the passwords using SHA512.<br/>
 &nbsp;&nbsp;- System has been hardened in accordance to most of the checks of the CIS Benchmark.<br/>
+&nbsp;&nbsp;- Run commands/installations after first boot via the post_installation.sh script.<br/>
+&nbsp;&nbsp;- System is divided by a privileged user and a non-privileged user that can only change networking (Good for Service Providers!).<br/>
+
+**Available Templates**<br/>
+&nbsp;&nbsp;- Default template: Build the BlackBox Appliance you want!.<br/>
 &nbsp;&nbsp;- Microsoft Azure Sentinel CEF rsyslog collector with OMS Agent template.<br/>
+&nbsp;&nbsp;- Syslog collector (with TCP support, local cache, and TLS support!).<br/>
+
+------------------------------------------------------------------
+
+**Planned Templates**<br/>
+&nbsp;&nbsp;- Docker node for quickly setting up docker images.<br/>
+&nbsp;&nbsp;- Quickly deployed secure web server with Availability functionality.<br/>
+&nbsp;&nbsp;- Load balancer with transparent TCP proxy.<br/>
+
+**Planned Functionality**<br/>
+&nbsp;&nbsp;- Establish a control channel via VPN (OpenVPN) to a VPN Server for remote control (Good for Service Providers!).<br/>
+&nbsp;&nbsp;- Network scanning with nmap for making network inventory available to SIEMs and other platforms.<br/>
+&nbsp;&nbsp;- Powershell script that installs WSL so that you can create the ISO easily in Windows.<br/>
+&nbsp;&nbsp;- Install Docker if needed in other Linux distros to get CentOS/RHEL for generating ISO.<br/>
+
+**Not Planned Templates (Ideas)**<br/>
+&nbsp;&nbsp;- IAM Platform.<br/>
+&nbsp;&nbsp;- Directory Services Platform.<br/>
+&nbsp;&nbsp;- RADIUS server with 2FA Support with Yubico.<br/>
 
 ------------------------------------------------------------------
 **Package Requirements**<br/>
@@ -76,22 +92,21 @@ Generated ISO (it will try to download them for Centos 7):<br/>
 <br/>
 Do NOT forget to edit your environment parameters at the start of the main script (create_blackbox_iso.sh).<br/>
 <br/>
-Edit the CONFIG_INPUT_DIR/requirements.txt according to the System Distro version you want to use.<br/>
+If not using YUM, edit the CONFIG_INPUT_DIR/requirements.txt according to the System Distro version you want to use.<br/>
 <br/>
 You can edit the CONFIG_INPUT_DIR/post_installation.sh for the commands to run after first boot and the network adapter starts.<br/>
 <br/>
 **usage:** ./create_blackbox_iso.sh [OPTIONS]<br/>
 <br/>
 optional arguments:<br/>
-&nbsp;&nbsp;-d | --default&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default ISO creation process.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;-d | --default&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;default ISO creation process.<br/>
 &nbsp;&nbsp;-azs | --azuresentinel&nbsp;&nbsp;&nbsp;&nbsp;ISO with Azure Sentinel CEF collector & OMS Agent.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;-s | --syslogcollector&nbsp;&nbsp;&nbsp;&nbsp;ISO with RSyslog syslog collector.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Note: requires the workspace ID, shared key and system hostname set in main script.<br/>
-&nbsp;&nbsp;-? | -h | --help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shows this usage text.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;-? | -h | --help&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shows this usage text.<br/>
 <br/>
 
 ------------------------------------------------------------------
 **Known issues / Planned development**<br/>
-&nbsp;&nbsp;- Trying to replace python2 with python3 as part of %packages is not liked by anaconda/kickstart.<br/>
-&nbsp;&nbsp;- Debian and Suse based distros for the ISO creation may not have the required packages to run the script.<br/>
-&nbsp;&nbsp;- Missing some error control scenarios, like detecting if the ISO is file-locked before saving.<br/>
-&nbsp;&nbsp;- ISO generation script is not proxy-aware.<br/>
+&nbsp;&nbsp;- Still missing some error control scenarios.<br/>
+&nbsp;&nbsp;- ISO generation script is not proxy-aware yet.<br/>
