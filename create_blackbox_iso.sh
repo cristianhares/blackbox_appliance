@@ -25,7 +25,7 @@ ISO_MIRROR_FILE="CentOS-7-x86_64-Minimal-2003.iso" # Change to the chosen distro
 ISO_RELEASE="7.8.2003" # Change to the specific ISO release
 ISO_ARCH="x86_64"
 ISO_GPG_KEY="RPM-GPG-KEY-CentOS-7" # Change to the non-dev GPG Key inside the ISO
-ISO_FILE_URI="/isos/$ISO_ARCH"
+ISO_FILE_URI="/isos/$ISO_ARCH/"
 ISO_PACKS_URI="/os/$ISO_ARCH/"
 ISO_UPDATES_URI="/updates/$ISO_ARCH/"
 
