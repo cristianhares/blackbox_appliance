@@ -321,7 +321,7 @@ cp $HOME_DIR/$CONFIG_INPUT_DIR/post_installation.sh $HOME_DIR/$ISO_EXTRACT_DIR/s
 
 # Set hostname on first boot if variable length is greater than 1
 if [ ${#SYSTEM_FQDN_HOSTNAME} -ge 1 ]; then
-	echo "hostname $SYSTEM_FQDN_HOSTNAME" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
+	echo "hostnamectl set-hostname $SYSTEM_FQDN_HOSTNAME" >> $HOME_DIR/$ISO_EXTRACT_DIR/scripts/post_installation.sh
 fi
 
 
