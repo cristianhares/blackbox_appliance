@@ -14,7 +14,7 @@ ISO_EXTRACT_DIR=iso_extract
 ISO_EXTRAS_DIR=extras
 ISO_OUTPUT_DIR=iso_output
 ISO_OUTPUT_NAME=bbappliance.iso
-CUSTOM_PACKAGES=extras
+CUSTOM_PACKAGES_DIR=extras
 TEMPLATES_DIR=templates
 LOG_FILE_DIR=logs
 LOG_FILE_NAME=bbappliance_iso.log
@@ -30,7 +30,7 @@ ISO_PACKS_URI="/os/$ISO_ARCH/"
 ISO_UPDATES_URI="/updates/$ISO_ARCH/"
 
 # Packages required for ISO
-PACKAGES_SYSTEM="hyperv-daemons open-vm-tools aide tcp_wrappers wget"
+PACKAGES_SYSTEM="hyperv-daemons open-vm-tools aide tcp_wrappers"
 
 # Template to use from TEMPLATES_DIR for hardening system
 # Note: Some hardening options are set via the ks.cfg
@@ -68,6 +68,7 @@ SYSLOG_CACHE_SIZE="4g" # Set as XXg in gigabytes
 # MS Azure template variables
 AZ_WORKSPACE_ID=""
 AZ_SHARED_KEY=""
+AZ_REQUIRED_PACKAGES="wget policycoreutils-python"
 
 # TO HERE
 #-------------------------------------------------------------------------------------------
@@ -105,8 +106,8 @@ if [ ! -e "$HOME_DIR/$ISO_OUTPUT_DIR" ]; then
 	mkdir $HOME_DIR/$ISO_OUTPUT_DIR
 fi
 
-if [ ! -e "$HOME_DIR/$CUSTOM_PACKAGES" ]; then
-	mkdir $HOME_DIR/$CUSTOM_PACKAGES
+if [ ! -e "$HOME_DIR/$CUSTOM_PACKAGES_DIR" ]; then
+	mkdir $HOME_DIR/$CUSTOM_PACKAGES_DIR
 fi
 
 if [ ! -e "$HOME_DIR/$ISO_INPUT_DIR" ]; then
@@ -280,24 +281,25 @@ PASS_BOOTLOADER_PBKDF2=$(echo -e "$PASSWORD_BOOTLOADER\n$PASSWORD_BOOTLOADER" | 
 sed -i "s|^bootloader.*|bootloader --iscrypted --password=$PASS_BOOTLOADER_PBKDF2|g" $HOME_DIR/$ISO_EXTRACT_DIR/ks.cfg
 
 
-# Check for extra RPMs and reconstruct the repos
-rpmcount=`ls -1 $HOME_DIR/$CUSTOM_PACKAGES/*.rpm 2>/dev/null | wc -l`
+# Check for extra RPMs and copy them before rebulding the repo metadata
+rpmcount=`ls -1 $HOME_DIR/$CUSTOM_PACKAGES_DIR/*.rpm 2>/dev/null | wc -l`
 
 if [ $rpmcount != 0 ]; then
 	echo "PROCESSING: Copying RPM files to ISO repository"
 	echo "----------------------------------------------------------------------"
 
 	# Copy custom packages from the extras folder to add to the ISO repository if there are any
-	cp $HOME_DIR/$CUSTOM_PACKAGES/*.rpm $HOME_DIR/$ISO_EXTRACT_DIR/Packages/ >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-
-	echo "PROCESSING: Rebuilding repository metadata"
-	echo "----------------------------------------------------------------------"
-
-	# Update the ISO yum repository with the added packages
-	for repofile in $HOME_DIR/$ISO_EXTRACT_DIR/repodata/*minimal*comps.xml; do
-		createrepo -g $repofile $HOME_DIR/$ISO_EXTRACT_DIR/ --update >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-	done
+	cp $HOME_DIR/$CUSTOM_PACKAGES_DIR/*.rpm $HOME_DIR/$ISO_EXTRACT_DIR/Packages/ >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 fi
+
+
+# Update the ISO yum repository with the added packages
+echo "PROCESSING: Rebuilding repository metadata"
+echo "----------------------------------------------------------------------"
+
+for repofile in $HOME_DIR/$ISO_EXTRACT_DIR/repodata/*minimal*comps.xml; do
+	createrepo -g $repofile $HOME_DIR/$ISO_EXTRACT_DIR/ --update >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+done
 
 
 # Create the custom scripts folder before ISO creation
@@ -349,9 +351,6 @@ case $TEMPLATE in
 			fi
 			exit 1
 		fi
-
-		echo "INFO: Microsoft Azure Sentinel template files copied"
-		echo "----------------------------------------------------------------------"
 	;;
 	"rsyslogcollector")
 		if [ ${#SYSLOG_DESTINATION} -lt 1 ]; then
