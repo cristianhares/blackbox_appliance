@@ -20,7 +20,7 @@ LOG_FILE_DIR=logs
 LOG_FILE_NAME=bbappliance_iso.log
 
 # ISO download variables
-ISO_MIRROR_URL="http://mirror.xnet.co.nz/pub/centos/" # Change to your closest mirror
+ISO_MIRROR_URL="http://centos.mirror.digitalpacific.com.au/" # Change to your closest mirror
 ISO_MIRROR_FILE="CentOS-7-x86_64-Minimal-2003.iso" # Change to the chosen distro ISO file name
 ISO_RELEASE="7.8.2003" # Change to the specific ISO release
 ISO_ARCH="x86_64"
