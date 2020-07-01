@@ -31,10 +31,17 @@ case $CURRENT_OS in
 			# Cleanup to recognize new repos
 			yum clean all >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 
-			# Download required packages for system installation
-			yum -y --disablerepo="*" --enablerepo="ReleasePackages" --skip-broken --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ install $PACKAGES_SYSTEM >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-			yum -y --disablerepo="*" --enablerepo="ReleasePackages" --skip-broken --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ reinstall $PACKAGES_SYSTEM >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
-			yum -y --disablerepo="*" --enablerepo="ReleasePackages" --skip-broken --downloadonly --downloaddir=$HOME_DIR/$CUSTOM_PACKAGES/ updates $PACKAGES_SYSTEM >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+			# Add extra packages depending on template
+			if [[ $TEMPLATE == "msazsentinel" ]]; then
+				AZ_PACKAGES_DEPS=$(repoquery --requires --recursive --resolve --repoid=ReleasePackages -a $AZ_REQUIRED_PACKAGES | sed -r 's/-[0-9]+\:.*$//')
+				PACKAGES_TO_DOWNLOAD="${PACKAGES_SYSTEM} ${AZ_REQUIRED_PACKAGES} ${AZ_PACKAGES_DEPS}"
+			else
+				PACKAGES_TO_DOWNLOAD=$PACKAGES_SYSTEM
+			fi
+
+			# Download required packages for system installation and its dependencies if missing
+			yum -y --disablerepo="*" --enablerepo="ReleasePackages" --skip-broken --downloadonly --downloaddir=$HOME_DIR/$ISO_EXTRACT_DIR/Packages/ install $PACKAGES_TO_DOWNLOAD >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
+			yum -y --disablerepo="*" --enablerepo="ReleasePackages" --skip-broken --downloadonly --downloaddir=$HOME_DIR/$ISO_EXTRACT_DIR/Packages/ reinstall $PACKAGES_TO_DOWNLOAD >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 
 			# Remove release repo after finishing download
 			rm -f /etc/yum.repos.d/releaseupdates.repo
@@ -55,7 +62,7 @@ case $CURRENT_OS in
 			apt-get -q install genisoimage python3 python-pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
+				curl -so $HOME_DIR/$ISO_EXTRACT_DIR/Packages/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
 			done
 		else
 			echo "ERROR: Ubuntu distro used for generating ISO will not have the packages required"
@@ -72,7 +79,7 @@ case $CURRENT_OS in
 			apt-get -q install genisoimage python3 python-pykickstart createrepo >> $HOME_DIR/$LOG_FILE_DIR/$LOG_FILE_NAME 2>&1
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
+				curl -so $HOME_DIR/$ISO_EXTRACT_DIR/Packages/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI\Packages/$reqpackage
 			done
 		else
 			echo "ERROR: Ubuntu distro used for generating ISO will not have the packages required"
@@ -91,7 +98,7 @@ case $CURRENT_OS in
 
 			# Download the packages for the distro selected
 			for reqpackage in $HOME_DIR/$CONFIG_INPUT_DIR/requirements.txt; do
-				curl -so $HOME_DIR/$CUSTOM_PACKAGES/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI$reqpackage
+				curl -so $HOME_DIR/$ISO_EXTRACT_DIR/Packages/$reqpackage $ISO_MIRROR_URL$ISO_RELEASE$ISO_PACKS_URI$reqpackage
 			done
 		else
 			echo "ERROR: Suse distro used for generating ISO will not have the packages required"
