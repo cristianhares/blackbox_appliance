@@ -23,15 +23,9 @@ find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a always,e
 service auditd restart
 
 # Ensure that unused file systems are removed (vfat is used by EFI)
-echo "install udf /bin/true" >> /etc/modprobe.d/CIS.conf
-echo "install cramfs /bin/true" >> /etc/modprobe.d/CIS.conf
-echo "install squashfs /bin/true" >> /etc/modprobe.d/CIS.conf
 rmmod squashfs
 rmmod udf
 rmmod cramfs
-
-# Remove floppy as it is not needed
-echo "blacklist floppy" >> /etc/modprobe.d/blacklist-floppy.conf
 rmmod floppy
 
 # Set cron ownership
