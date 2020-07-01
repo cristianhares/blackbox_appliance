@@ -92,7 +92,9 @@ Generated ISO (it will try to download them for Centos 7):<br/>
 <br/>
 Do NOT forget to edit your environment parameters at the start of the main script (create_blackbox_iso.sh).<br/>
 <br/>
-If not using YUM, edit the CONFIG_INPUT_DIR/requirements.txt according to the System Distro version you want to use.<br/>
+Remember that to add your custom packages in the extras folder add them in the %packages section of the ks.cfg file, you can also add them to the PACKAGES_SYSTEM variable if you want them automatically downloaded if they are present in a YUM repository.<br/>
+<br/>
+If not using YUM, edit the CONFIG_INPUT_DIR/requirements.txt according to the System Distro version you want to use for downloading them.<br/>
 <br/>
 You can edit the CONFIG_INPUT_DIR/post_installation.sh for the commands to run after first boot and the network adapter starts.<br/>
 <br/>

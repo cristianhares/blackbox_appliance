@@ -20,3 +20,4 @@ xmlsec1-1.2.20-7.el7_4.x86_64.rpm
 xmlsec1-openssl-1.2.20-7.el7_4.x86_64.rpm
 aide-0.15.1-13.el7.x86_64.rpm
 tcp_wrappers-7.6-77.el7.x86_64.rpm
+wget-1.14-18.el7_6.1.x86_64.rpm
